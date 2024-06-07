@@ -93,10 +93,10 @@ app.get('/qlik-cloud-puppet', async (req, res) => {
         // another option to pass selections will be to creat a tempBookmark with the button extension and just pass the bookmark ID to the backend, but then can we pass bookmark id in the url or do we need to use qix for it on the same session?
 
     // const qlikUrl = `${qlikConfig.host}/sense/app/${appId}/sheet/${sheetId}/state/analysis/${selections}`;
-    // const qlikUrl = "https://kassovitz.us.qlikcloud.com/sense/app/d6152f1d-c366-4471-8aa6-7ae473e63f59/sheet/XuWLHFK/state/analysis"
-    const qlikUrl = "https://kassovitz.us.qlikcloud.com/"
+    // const qlikUrl = `${qlikConfig.host}/sense/app/d6152f1d-c366-4471-8aa6-7ae473e63f59/sheet/XuWLHFK/state/analysis`
+    const qlikUrl = `${qlikConfig.host}/`;
 
-    await page.goto(qlikUrl, {waitUntil: 'networkidle0'}); // able to login using the access token but the websocket is blocked - CSRF token is missing too. also, it seems to append the header to all requests - even the ones that are not to the qlik server, so the page does not load properly
+    await page.goto(qlikUrl); // able to login using the access token but the websocket is blocked - CSRF token is missing too. also, it seems to append the header to all requests - even the ones that are not to the qlik server, so the page does not load properly
 
     await delay(5000); // wait for the page to load, will use a better method later to indicate Qlik is ready for pictures
 
