@@ -1,4 +1,7 @@
 import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 const app = express();
 
 import https from "https";
@@ -40,6 +43,28 @@ function delay(time) {
     });
 }
 
+//access token method the frontend will call
+app.post("/access-token", async (req, res) => {
+    // const userId = req.session?.user?.id;
+    const userId = "_Mvc3vkMq2YXadXEnYIkb08rXEBXn6L8";
+    try {
+        //call to Qlik Cloud tenant to obtain an access token
+        const accessToken = await qlikAuth.getAccessToken({
+        hostConfig: {
+            ...qlikConfig,
+            userId,
+            noCache: true,
+        },
+        });
+        console.log("I got an access token!");
+        //access token returned to front end
+        res.send(accessToken);
+    } catch (err) {
+        console.log(err);
+        res.status(401).send("No access");
+    }
+});
+
 app.use(function (req, res, next) {
     console.log('Time:', Date.now())
     next()
@@ -47,29 +72,15 @@ app.use(function (req, res, next) {
 
 app.get('/', (req, res) => res.send('Hello World!'));
 
+// Serve the Qlik mashup
+app.get('/qlik-embed-demo', function(req, res) {
+    const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
+    const __dirname = path.dirname(__filename); // get the name of the directory
+    res.sendFile(path.join(__dirname, '/qlik-embed-demo.html'));
+});
+
+// Use puppeteer to take a screenshot of the Qlik mashup
 app.get('/qlik-cloud-puppet', async (req, res) => {
-    let accessToken;
-
-    // const userId = req.session?.user?.id;
-    const userId = "_Mvc3vkMq2YXadXEnYIkb08rXEBXn6L8"; // Hardcoded for testing, should be replaced with the user ID from the front end, the qlik extension button will have to get the user id from the current session and passit in the request
-    try {
-        // Call to Qlik Cloud tenant to obtain an access token
-        accessToken = await qlikAuth.getAccessToken({
-            hostConfig: {
-                ...qlikConfig,
-                userId,
-                noCache: true,
-            },
-        });
-        console.log("I got an access token!");
-        // Access token returned to front end (will be used by peuppeteer to authenticate to Qlik Sense server)
-    } catch (err) {
-        console.log(err);
-        res.status(401).send("No access");
-    }
-
-    console.log({accessToken});
-
     // Launch the browser and open a new blank page, add access token to the URL
     const browser = await puppeteer.launch({
         headless: false,
@@ -80,23 +91,13 @@ app.get('/qlik-cloud-puppet', async (req, res) => {
         }
     });
     const page = await browser.newPage();
-    await page.setExtraHTTPHeaders({
-        'Authorization': `Bearer ${accessToken}`
-    });
 
-    // const appId = req.query.appId;
-    // const sheetId = req.query.sheetId;
-    // const selections = req.query.selections;
+    const appId = req.query.appId;
+    const tempBookId = req.query.tempBookId;
     
-        // will need to covnert selections to the format that Qlik expects
-        // SENSESERVER/sense/app/456942a2-d3e2-40a5-bad6-985e80294f05/sheet/2c6000a4-44a4-49aa-9590-f111e880bda9/state/analysis/select/Dim1/B/select/Dim2/c;d
-        // another option to pass selections will be to creat a tempBookmark with the button extension and just pass the bookmark ID to the backend, but then can we pass bookmark id in the url or do we need to use qix for it on the same session?
+    const mashup = `https://localhost:4000/qlik-embed-demo?appId=${appId}&tempBookId=${tempBookId}`;
 
-    // const qlikUrl = `${qlikConfig.host}/sense/app/${appId}/sheet/${sheetId}/state/analysis/${selections}`;
-    // const qlikUrl = `${qlikConfig.host}/sense/app/d6152f1d-c366-4471-8aa6-7ae473e63f59/sheet/XuWLHFK/state/analysis`
-    const qlikUrl = `${qlikConfig.host}/`;
-
-    await page.goto(qlikUrl); // able to login using the access token but the websocket is blocked - CSRF token is missing too. also, it seems to append the header to all requests - even the ones that are not to the qlik server, so the page does not load properly
+    await page.goto(mashup); // able to login using the access token but the websocket is blocked - CSRF token is missing too. also, it seems to append the header to all requests - even the ones that are not to the qlik server, so the page does not load properly
 
     await delay(5000); // wait for the page to load, will use a better method later to indicate Qlik is ready for pictures
 
@@ -106,7 +107,16 @@ app.get('/qlik-cloud-puppet', async (req, res) => {
         fullPage: true
     });
 
-    res.send(screenshot);
-
     await browser.close();
+
+    // send the screenshot back to the client
+    // res.set('Content-Type', 'image/jpeg');
+    // res.send(screenshot);
+
+
+    // send the screenshot back to client for download
+    res.setHeader('Content-Type', 'image/jpeg');
+    res.setHeader('Content-Disposition', 'attachment; filename=download.jpg');
+    res.send(screenshot);
+    
 });

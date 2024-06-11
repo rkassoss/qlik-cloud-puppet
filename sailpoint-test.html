@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.9.0/styles/default.min.css">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.9.0/highlight.min.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+
+    <script
+    crossorigin="anonymous"
+    type="application/javascript"
+    src="node_modules/@qlik/embed-web-components/dist/index.js"
+    data-host="https://kassovitz.us.qlikcloud.com"
+    data-client-id="2e2c3a66c97818c67a21d21c1c27d788"
+    data-redirect-uri="https://localhost:5501/oauth_callback.html"
+    data-access-token-storage="session"
+    >
+    </script>
+
+<!-- // data-auth-type="Oauth2"
+// src="https://cdn.jsdelivr.net/npm/@qlik/embed-web-components" -->
+    <style>
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      .app {
+        position: relative;
+        width: 100%;
+        height: calc(100vh - 180px);
+        border: 1px solid #bbb;
+        border-radius: 3px;
+        box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);
+      }
+      .row {
+        display: flex;
+        width: 100%;
+      }
+      .object {
+        position: relative;
+        flex: 1;
+        height: 400px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Embedding single objects</h1>
+    <p><a href="https://qlik.dev/examples/qlik-embed-examples/classic-app-example/" target="_blank">More Qlik embed examples</a></p>
+      <qlik-embed
+        ui="selections"
+        app-id="d6152f1d-c366-4471-8aa6-7ae473e63f59"
+        >
+      </qlik-embed>
+      <div class="row">
+        <div class="object">
+          <qlik-embed
+          ui="object"
+          app-id="d6152f1d-c366-4471-8aa6-7ae473e63f59"
+          object-id="vLBzTah"
+          >
+          </qlik-embed>
+        </div>
+        <div class="object">
+          <qlik-embed
+          id="visualization"
+          ui="object"
+          app-id="d6152f1d-c366-4471-8aa6-7ae473e63f59"
+          object-id="mTjVeM"
+          context:json="{theme:'breeze', constraints:{select: true}}"
+          >
+          </qlik-embed>
+        </div>
+        <div class="object">
+          <qlik-embed
+          ui="object"
+          app-id="d6152f1d-c366-4471-8aa6-7ae473e63f59"
+          object-id="vLBzTah"
+          >
+          </qlik-embed>
+        </div>
+      </div>
+
+    <h1>Sheet embed with sheet list generated with engine API</h1>
+   
+    <select id="sheetdrop" name="SheetList">
+    </select>
+        <div class="app">
+          <!-- <qlik-embed
+          id="sheetItem"
+          ui="object"
+          app-id="d6152f1d-c366-4471-8aa6-7ae473e63f59"
+          object-id="zBAFH"
+          context:json="{theme:'breeze'}"
+        ></qlik-embed> -->
+
+
+        https://kassovitz.us.qlikcloud.com/sense/app/70f084ec-9c79-4866-9389-424d894006c3/sheet/fPxXBLH
+          <qlik-embed
+            id="sheetItem"
+            ui="object"
+            app-id="70f084ec-9c79-4866-9389-424d894006c3"
+            object-id="fPxXBLH"
+          ></qlik-embed>
+        </div>
+    
+    <h1>Qlik Embed - Full app classic</h1>
+    <!-- Show code snippet -->
+    <pre><code class="html">
+      &lt;qlik-embed ui="classic/app"
+      app-id="d6152f1d-c366-4471-8aa6-7ae473e63f59" sheet-id="444526a9-fb9b-471d-affc-c3e64fa49ad2"></qlik-embed>
+    </code></pre>
+
+
+    <div class="app">
+      <!-- https://qlik.dev/examples/qlik-embed-examples/classic-app-example/ -->
+      <qlik-embed
+      id="embedded-app"
+      ui="classic/app"
+      app-id="d6152f1d-c366-4471-8aa6-7ae473e63f59"
+      sheet-id="zBAFH"
+      >
+      </qlik-embed>
+
+      <!-- bookmark="<BOOKMARK_ID_FROM_APP>" -->
+      <!-- <qlik-embed
+      id="embedded-app"
+      ui="classic/app"
+      app-id="d6152f1d-c366-4471-8aa6-7ae473e63f59"
+      theme="breeze"
+      sheet-id="444526a9-fb9b-471d-affc-c3e64fa49ad2"
+      clear-selections="true"
+    ></qlik-embed> -->
+    </div>
+
+  </body>
+
+  <script type="module">
+console.log("hello");
+    
+    // const classic = document.getElementById("embedded-app");
+    const element = document.getElementById("sheetItem");
+    console.log({element});
+    // console.log({classic});
+    const sheetItem = document.getElementById("sheetItem");
+    const refApi = await element.getRefApi();
+    //const obj = await refApi.getObject();
+    console.log({refApi});
+    const doc = await refApi.getDoc();
+    console.log({doc});
+    const appProps = await refApi.getAppLayout();
+    const myList = await doc.getSheetList();
+    console.log("myList");
+    console.log(myList);
+    const obj = await doc.createSessionObject({
+          "qInfo": {
+            "qId": "sheetList",
+            "qType": "SheetList"
+          },
+          "qAppObjectListDef": {
+            "qType": "sheet",
+            "qData": {
+              "title": "/qMetaDef/title",
+              "thumbnail": "/thumbnail",
+              "cells": "/cells",
+              "rank": "/rank",
+              "columns": "/columns",
+              "rows": "/rows"
+            }
+          }
+        });
+    const sheetsLayout = await obj.getLayout();
+    const sheetList = sheetsLayout.qAppObjectList.qItems;
+    let dd = document.getElementById('sheetdrop');
+    dd.length = 0;
+    let defaultOption = document.createElement('option');
+    defaultOption.text = "Select a sheet to navigate to";
+    dd.add(defaultOption);
+    dd.selectedIndex=0;
+
+    let option;
+    for (let i=0;i<sheetList.length; i++) {
+      option = document.createElement('option');
+      option.text = sheetList[i].qMeta.title;
+      option.value = sheetList[i].qMeta.id;
+      dd.add(option);
+    }
+
+    dd.addEventListener("change", function() {
+      if (dd.selectedIndex > 0)
+      {
+        console.log(dd.options[dd.selectedIndex].value);
+        let selOption = dd.options[dd.selectedIndex];
+        console.log(selOption.value);
+        sheetItem.setAttribute('object-id', selOption.value);
+      }
+    });
+    
+  </script>
+</html>
