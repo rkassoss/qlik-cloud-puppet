@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <!-- qlik embed web componenets will not work for extensions -->
     <script
     crossorigin="anonymous"
     type="application/javascript"
@@ -11,12 +12,9 @@
     data-auth-type="Oauth2"
     >
     </script>
-
     <script>
       async function getAccessToken() {
-
         console.log("getAccessToken");
-
         const response = await fetch("/access-token", {
           method: "POST",
           credentials: "include",
@@ -31,61 +29,84 @@
         err.detail;
         throw err;
       }
-    </script>
 
+      // get paramas from url
+      const urlParams = new URLSearchParams(window.location.search);
+      const appId = urlParams.get("appId");
+      const bookmarkId = urlParams.get("bookmarkId");
+
+      console.log({ appId, bookmarkId });
+
+    </script>
     <style>
       body {
         font-family: Arial, Helvetica, sans-serif;
       }
-      .app {
-        position: relative;
-        width: 100%;
-        height: calc(100vh - 180px);
-        border: 1px solid #bbb;
-        border-radius: 3px;
-        box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);
-      }
       .row {
         display: flex;
+        flex-direction: column;
         width: 100%;
       }
       .object {
         position: relative;
-        flex: 1;
         height: 400px;
+      }
+      .kpi {
+        height: 200px;
+      }
+      .table {
+        height: 1000px;
       }
     </style>
   </head>
   <body>
     <h1>Embedding single objects</h1>
 
-      <div class="row">
-        <div class="object">
-          <qlik-embed
-          ui="object"
-          app-id="d6152f1d-c366-4471-8aa6-7ae473e63f59"
-          object-id="vLBzTah"
-          >
-          </qlik-embed>
-        </div>
-        <div class="object">
-          <qlik-embed
-          id="visualization"
-          ui="object"
-          app-id="d6152f1d-c366-4471-8aa6-7ae473e63f59"
-          object-id="mTjVeM"
-          context:json="{theme:'breeze', constraints:{select: true}}"
-          >
-          </qlik-embed>
-        </div>
-        <div class="object">
-          <qlik-embed
-          ui="object"
-          app-id="d6152f1d-c366-4471-8aa6-7ae473e63f59"
-          object-id="vLBzTah"
-          >
-          </qlik-embed>
-        </div>
+    <div class="row">
+      <div class="object kpi">
+        <qlik-embed
+        ui="object"
+        app-id="d6152f1d-c366-4471-8aa6-7ae473e63f59"
+        object-id="mTjVeM"
+        context:json="{theme:'breeze', constraints:{select: true}}"
+        >
+        </qlik-embed>
       </div>
+      <div class="object chart">
+        <qlik-embed
+        ui="object"
+        app-id="d6152f1d-c366-4471-8aa6-7ae473e63f59"
+        object-id="3688b116-7f39-440a-872a-644f324e17ea"
+        >
+        </qlik-embed>
+      </div>
+      <div class="object table">
+        <qlik-embed
+        ui="object"
+        app-id="d6152f1d-c366-4471-8aa6-7ae473e63f59"
+        object-id="feTjNWz"
+        >
+        </qlik-embed>
+      </div>
+    </div>
+
+    <div>
+      <h2>todo</h2>
+      <ul>
+        <li>get app id and tempBookmark id from url param</li>
+        <li>use @qlik/api with oauth2 access token to opendoc - qix</li>
+        <li>apply tempBookmark</li>
+        <li>get app sheets</li>
+        <li>in each sheet, get objects</li>
+        <li>if object is image worthy (barchart, linechart etc.) - use qlik-embed</li>
+        <li>if kpi => height = 200</li>
+        <li>if object is table worthy - get hypercubeData and render with html (or figure out height and render with qlik-embed?)</li>
+        <li>when done rendering - puppet will create a pdf from the page</li>
+      </ul>
+      <h2>Issues</h2>
+      <ul>
+        <li>"classic/chart" should work with extensions. Jeff G submitted a bug</li>
+      </ul>
+    </div>
   </body>
 </html>

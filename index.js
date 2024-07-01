@@ -9,6 +9,24 @@ import fs from 'fs';
 import morgan from 'morgan';
 const port = 4000;
 
+// CORS add allowed origin from all qlikcloud.com subdomains
+import cors from 'cors';
+var allowedOrigins = ['https://kassovitz.us.qlikcloud.com'];
+app.use(cors({
+    origin: function(origin, callback){
+        // allow requests with no origin 
+        // (like mobile apps or curl requests)
+        if(!origin) return callback(null, true);
+        if(allowedOrigins.indexOf(origin) === -1){
+          var msg = 'The CORS policy for this site does not ' +
+                    'allow access from the specified Origin.';
+          return callback(new Error(msg), false);
+        }
+        return callback(null,true);
+    },
+    credentials: true
+}));
+
 // Middleware
 app.use(morgan("dev"));
 
@@ -17,6 +35,8 @@ const options = {
     key: fs.readFileSync("C:/certificates/localhost.key"),
     cert: fs.readFileSync("C:/certificates/localhost.crt"),
 };
+
+let userId;
 
 // Create HTTPS server
 const server = https.createServer(options, app);
@@ -45,8 +65,8 @@ function delay(time) {
 
 //access token method the frontend will call
 app.post("/access-token", async (req, res) => {
-    // const userId = req.session?.user?.id;
-    const userId = "_Mvc3vkMq2YXadXEnYIkb08rXEBXn6L8";
+    console.log("getting access token for user: " + userId);
+    // const userId = "_Mvc3vkMq2YXadXEnYIkb08rXEBXn6L8";
     try {
         //call to Qlik Cloud tenant to obtain an access token
         const accessToken = await qlikAuth.getAccessToken({
@@ -80,11 +100,12 @@ app.get('/qlik-embed-demo', function(req, res) {
 });
 
 // Use puppeteer to take a screenshot of the Qlik mashup
-app.get('/qlik-cloud-puppet', async (req, res) => {
+app.post('/qlik-cloud-puppet', async (req, res) => {
+    console.log("puppeteer started for user: " + userId);
     // Launch the browser and open a new blank page, add access token to the URL
     const browser = await puppeteer.launch({
-        headless: false,
-        devtools: true,
+        headless: true,
+        devtools: false,
         defaultViewport: {
             width:1920,
             height:1080
@@ -92,20 +113,38 @@ app.get('/qlik-cloud-puppet', async (req, res) => {
     });
     const page = await browser.newPage();
 
+    // console.log(req);
+
+    // check if the request has the required parameters
+    // get userId, appId, and tempNookId from the request
+    // userId = req.body.userId;
+    // const appId = req.body.appId;
+    // const bookmarkId = req.body.bookmarkId;
+
+    // get params from query
+    userId = req.query.userId;
     const appId = req.query.appId;
-    const tempBookId = req.query.tempBookId;
+    const bookmarkId = req.query.bookmarkId;
+
     
-    const mashup = `https://localhost:4000/qlik-embed-demo?appId=${appId}&tempBookId=${tempBookId}`;
+    const mashup = `https://localhost:4000/qlik-embed-demo?appId=${appId}&bookmarkId=${bookmarkId}`;
 
     await page.goto(mashup); // able to login using the access token but the websocket is blocked - CSRF token is missing too. also, it seems to append the header to all requests - even the ones that are not to the qlik server, so the page does not load properly
 
     await delay(5000); // wait for the page to load, will use a better method later to indicate Qlik is ready for pictures
 
     // take screenshot of the whole page, later will need to take a screenshot of the specific objects so I could get hypercube data of the tables
-    const screenshot = await page.screenshot({
-        path: 'screenshot_full.jpg',
-        fullPage: true
-    });
+    // const screenshot = await page.screenshot({
+    //     path: 'screenshot_full.jpg',
+    //     fullPage: true
+    // });
+
+    console.log("pdf generation started");
+
+    // page pdf
+    const pdf = await page.pdf({path: 'report.pdf', format: 'A4'});
+
+    console.log("pdf generation finished");
 
     await browser.close();
 
@@ -115,8 +154,13 @@ app.get('/qlik-cloud-puppet', async (req, res) => {
 
 
     // send the screenshot back to client for download
-    res.setHeader('Content-Type', 'image/jpeg');
-    res.setHeader('Content-Disposition', 'attachment; filename=download.jpg');
-    res.send(screenshot);
+    // res.setHeader('Content-Type', 'image/jpeg');
+    // res.setHeader('Content-Disposition', 'attachment; filename=download.jpg');
+    // res.send(screenshot);
+
+    // send the pdf back to client for download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=report.pdf');
+    res.send(pdf);
     
 });
